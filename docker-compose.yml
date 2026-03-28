@@ -1,0 +1,63 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cart_n_order
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cart_n_order
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api-docs || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # k6 load test runner (grafana/k6 official image).
+  # Activated via --profile k6 or docker compose run.
+  #
+  # Run data prep:
+  #   docker compose run --rm k6 run k6/scripts/data-prep.js -e BASE_URL=http://app:8080
+  #
+  # Run a scenario:
+  #   docker compose run --rm k6 run k6/scripts/scenarios/B1.js -e BASE_URL=http://app:8080
+  #
+  # Or use the orchestrator script (--docker flag):
+  #   ./k6/run-tests.sh --docker
+  k6:
+    image: grafana/k6:latest
+    profiles: ["k6"]
+    volumes:
+      - ./k6:/k6                # scripts at /k6/scripts/, results at /k6/results/
+    working_dir: /
+    environment:
+      BASE_URL: http://app:8080 # default; override with -e BASE_URL=... at run time
+
+volumes:
+  postgres_data:
