@@ -9,6 +9,7 @@ import pl.szymanski.wiktor.cart_n_order.domain.exception.CartEmptyException
 import pl.szymanski.wiktor.cart_n_order.domain.exception.CartNotFoundException
 import pl.szymanski.wiktor.cart_n_order.domain.exception.InsufficientStockException
 import pl.szymanski.wiktor.cart_n_order.domain.exception.InvalidOrderTransitionException
+import pl.szymanski.wiktor.cart_n_order.domain.exception.OptimisticConcurrencyException
 import pl.szymanski.wiktor.cart_n_order.domain.exception.OrderNotFoundException
 import pl.szymanski.wiktor.cart_n_order.domain.exception.ProductNotFoundException
 import pl.szymanski.wiktor.cart_n_order.infrastructure.adapter.inbound.rest.dto.ErrorResponse
@@ -45,6 +46,11 @@ class GlobalExceptionHandler {
     fun handleCartEmpty(ex: CartEmptyException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse(ex.message ?: "Cart is empty", "CART_EMPTY"))
+
+    @ExceptionHandler(OptimisticConcurrencyException::class)
+    fun handleConcurrencyConflict(ex: OptimisticConcurrencyException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorResponse(ex.message ?: "Concurrency conflict", "CONCURRENCY_CONFLICT"))
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {

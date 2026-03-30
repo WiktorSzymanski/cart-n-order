@@ -20,3 +20,6 @@ class CartEmptyException(val customerId: UUID) :
 
 class ProductNotFoundException(val productId: UUID) :
     RuntimeException("Product not found: $productId")
+
+class OptimisticConcurrencyException(val aggregateId: UUID, val conflictingVersion: Long, cause: Throwable? = null) :
+    RuntimeException("Optimistic concurrency conflict for aggregate $aggregateId at version $conflictingVersion", cause)

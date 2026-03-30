@@ -13,7 +13,6 @@ import pl.szymanski.wiktor.cart_n_order.domain.port.inbound.OrderUseCase
 import pl.szymanski.wiktor.cart_n_order.domain.port.outbound.CartRepository
 import pl.szymanski.wiktor.cart_n_order.domain.port.outbound.InventoryRepository
 import pl.szymanski.wiktor.cart_n_order.domain.port.outbound.OrderRepository
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
@@ -31,7 +30,6 @@ class OrderService(
         if (cart == null || cart.items.isEmpty()) throw CartEmptyException(customerId)
 
         val orderId = UUID.randomUUID()
-        val now = Instant.now()
         val orderItems = cart.items.map { item ->
             OrderItem(
                 id = UUID.randomUUID(),
@@ -41,15 +39,7 @@ class OrderService(
                 unitPrice = item.unitPrice
             )
         }
-        val order = Order(
-            id = orderId,
-            customerId = customerId,
-            status = OrderStatus.NEW,
-            items = orderItems,
-            totalAmount = cart.totalAmount,
-            createdAt = now,
-            updatedAt = now
-        )
+        val order = Order.place(orderId, customerId, orderItems, cart.totalAmount)
         orderRepository.save(order)
 
         for (item in cart.items) {
